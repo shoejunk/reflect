@@ -43,7 +43,6 @@ int main()
 	TDatum<int32_t> oDatum;
 	oDatum.Get() = 5;
 	std::vector<CDatum*> aData{ &oDatum };
-	int32_t i = aData[0]->Get<int32_t>();
 	oReflect.Construct("Test", aData);
 	return 0;
 }
