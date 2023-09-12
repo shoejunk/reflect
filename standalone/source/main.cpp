@@ -17,13 +17,16 @@ public:
 	CTest() { Log("Hello World!\n"); }
 	CTest(int32_t i)
 	{
-		Log("Hello World %d!\n", i);
+		Log("Hello %d Worlds!\n", i);
 	}
 };
 
 int main()
 {
 	CReflect oReflect;
+
+	// Register the CTest class with 0 and 1 parameters
+	oReflect.Register<CTest, 0>("Test");
 	oReflect.Register<CTest, 1>("Test");
 
 	// Open the level file
@@ -51,6 +54,7 @@ int main()
 	for (auto& oObject : oJson)
 	{
 		std::string sType = oObject["type"];
+		oReflect.Construct(sType);
 		oReflect.Construct(sType, oObject["data"]);
 	}
 	return 0;

@@ -7,9 +7,10 @@
 #include <nlohmann/json.hpp>
 
 // System
-#include <memory>
-#include <string>
-#include <unordered_map>
+#include <memory>			// std::unique_ptr
+#include <string>			// std::string
+#include <unordered_map>	// std::unordered_map
+#include <utility>			// std::pair
 
 // Namespaces
 using namespace NStk::NLog;
@@ -101,6 +102,19 @@ namespace NStk::NReflect
 		std::vector<std::unique_ptr<T>> m_aObjects;
 	};
 
+	struct SPairHash
+	{
+		template <class T1, class T2>
+		std::size_t operator () (const std::pair<T1, T2>& p) const
+		{
+			auto hash1 = std::hash<T1>{}(p.first);
+			auto hash2 = std::hash<T2>{}(p.second);
+
+			// Combine the hashes
+			return hash1 ^ hash2;
+		}
+	};
+
 	// Class that holds a map of class names to class objects
 	class CReflect
 	{
@@ -108,20 +122,31 @@ namespace NStk::NReflect
 		template<typename T, size_t kuConstructParams>
 		void Register(std::string sClassName)
 		{
-			m_aClasses[sClassName] = std::make_unique<TClass<T, kuConstructParams>>(sClassName);
+			m_aClasses[std::pair(sClassName, kuConstructParams)] = std::make_unique<TClass<T, kuConstructParams>>(sClassName);
 		}
 
 		void Construct(std::string const& ksClassName)
 		{
-			m_aClasses[ksClassName]->Construct();
+			auto oIt = m_aClasses.find(std::pair(ksClassName, 0));
+			if (oIt == m_aClasses.end())
+			{
+				Log("Error: Could not find class %s with a 0 parameter constructor!\n", ksClassName.c_str());
+				return;
+			}
+			oIt->second->Construct();
 		}
 
 		void Construct(std::string const& ksClassName, nlohmann::json const& kaData)
 		{
-			m_aClasses[ksClassName]->Construct(kaData);
+			if (!kaData.is_array())
+			{
+				Log("Error: json object passed to Construct must be an array.\n");
+				return;
+			}
+			m_aClasses[std::pair(ksClassName, kaData.size())]->Construct(kaData);
 		}
 
 	private:
-		std::unordered_map<std::string, std::unique_ptr<CClassBase>> m_aClasses;
+		std::unordered_map<std::pair<std::string, size_t>, std::unique_ptr<CClassBase>, SPairHash> m_aClasses;
 	};
 }
