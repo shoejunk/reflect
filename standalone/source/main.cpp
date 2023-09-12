@@ -1,8 +1,12 @@
+// STK
+#include <log/log.h>
 #include <reflect/reflect.h>
 
-#include <log/log.h>
+// 3rd Party
+#include <nlohmann/json.hpp>
 
-#include <iostream>
+// System
+#include <fstream>
 
 using namespace NStk::NReflect;
 using namespace NStk::NLog;
@@ -17,32 +21,37 @@ public:
 	}
 };
 
-template<>
-void TClass<CTest>::Construct(std::vector<CDatum*> const& kaData)
-{
-	if (kaData.size() == 0)
-	{
-		m_aObjects.push_back(std::make_unique<CTest>());
-	}
-	else if (kaData.size() == 1)
-	{
-		int32_t i = kaData[0]->Get<int32_t>();
-		m_aObjects.push_back(std::make_unique<CTest>(i));
-	}
-	else
-	{
-		Log("Error: Too many arguments to construct CTest!\n");
-	}
-}
-
-
 int main()
 {
 	CReflect oReflect;
-	oReflect.Register<CTest>("Test");
-	TDatum<int32_t> oDatum;
-	oDatum.Get() = 5;
-	std::vector<CDatum*> aData{ &oDatum };
-	oReflect.Construct("Test", aData);
+	oReflect.Register<CTest, 1>("Test");
+
+	// Open the level file
+	std::ifstream oFile("data/level.json");
+	if (!oFile.is_open())
+	{
+		Log("Error: Could not open level.json!\n");
+		return 1;
+	}
+
+	// Read it into a json object
+	nlohmann::json oJson;
+
+	try
+	{
+		oFile >> oJson;
+	}
+	catch (nlohmann::json::parse_error& oError)
+	{
+		Log("Error: Could not parse level.json: %s\n", oError.what());
+		return 1;
+	}
+
+	// Construct an object from each object in the json array
+	for (auto& oObject : oJson)
+	{
+		std::string sType = oObject["type"];
+		oReflect.Construct(sType, oObject["data"]);
+	}
 	return 0;
 }

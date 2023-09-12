@@ -25,6 +25,13 @@ CPMAddPackage(
 	VERSION 0.3.0
 )
 
+# Add package: nlohmann/json
+CPMAddPackage(
+	NAME nlohmann_json
+	GITHUB_REPOSITORY nlohmann/json
+	VERSION 3.11.2
+)
+
 # ---- Create standalone executable ----
 
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
@@ -33,4 +40,7 @@ add_executable(${PROJECT_NAME} ${sources})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Reflect")
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_SOURCE_DIR}/include)
 target_link_libraries(${PROJECT_NAME} Reflect::Reflect Log::Log cxxopts)
+file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
