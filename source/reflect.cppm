@@ -1,18 +1,13 @@
-#pragma once
+export module stk.reflect;
 
-// STK
-#include <log/log.h>
+import stk.hash;
+import stk.log;
 
-// 3rd Party
-#include <nlohmann/json.hpp>
-
-// System
-#include <memory>			// std::unique_ptr
-#include <string>			// std::string
-#include <unordered_map>	// std::unordered_map
-#include <utility>			// std::pair
+import <nlohmann/json.hpp>;
+import std.core;
 
 // Namespaces
+using namespace NStk::NHash;
 using namespace NStk::NLog;
 
 // NReflect
@@ -28,7 +23,7 @@ namespace NStk::NReflect
 	};
 
 	// Template class for the "Class" class
-	template<typename T, size_t kuConstructParams>
+	template<class T, size_t kuConstructParams>
 	class TClass : public CClassBase
 	{
 	public:
@@ -46,19 +41,19 @@ namespace NStk::NReflect
 		{
 			if (!kaData.is_array())
 			{
-				Log("Error: json object passed to Construct must be an array.\n");
+				NLog::Log("Error: json object passed to Construct must be an array.\n");
 				return;
 			}
 
 			if (kaData.size() < kuConstructParams)
 			{
-				Log("Error: Not enough paramaters to construct %s!\n", m_ksClassName.c_str());
+				NLog::Log("Error: Not enough paramaters to construct %s!\n", m_ksClassName.c_str());
 				return;
 			}
 
 			if (kaData.size() > kuConstructParams)
 			{
-				Log("Error: Too many paramaters to construct %s!\n", m_ksClassName.c_str());
+				NLog::Log("Error: Too many paramaters to construct %s!\n", m_ksClassName.c_str());
 				return;
 			}
 
@@ -90,6 +85,10 @@ namespace NStk::NReflect
 			{
 				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5]));
 			}
+			else if constexpr (kuConstructParams == 7)
+			{
+				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5], kaData[6]));
+			}
 		}
 
 		virtual std::string const& GetClassName() const override
@@ -104,10 +103,10 @@ namespace NStk::NReflect
 
 	struct SPairHash
 	{
-		template <class T1, class T2>
+		template <typename T1, typename T2>
 		std::size_t operator () (const std::pair<T1, T2>& p) const
 		{
-			auto hash1 = std::hash<T1>{}(p.first);
+			auto hash1 = std::hash<uint32_t>{}(p.first);
 			auto hash2 = std::hash<T2>{}(p.second);
 
 			// Combine the hashes
@@ -116,8 +115,11 @@ namespace NStk::NReflect
 	};
 
 	// Class that holds a map of class names to class objects
-	class CReflect
+	export class CReflect
 	{
+	private:
+		static constexpr size_t s_kuMaxConstructParams = 7;
+
 	public:
 		template<typename T, size_t kuConstructParams>
 		void Register(std::string sClassName)
@@ -143,10 +145,44 @@ namespace NStk::NReflect
 				Log("Error: json object passed to Construct must be an array.\n");
 				return;
 			}
-			m_aClasses[std::pair(ksClassName, kaData.size())]->Construct(kaData);
+			m_aClasses[std::pair(NHash::CHash{ ksClassName }, kaData.size())]->Construct(kaData);
 		}
 
+		template<uint32_t koHash>
+		class CIter
+		{
+		public:
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = CClassBase;
+			using pointer = CClassBase*;
+			using reference = CClassBase&;
+
+			CIter() : m_uParams(0), m_uIndex(0) {}
+
+			CIter& operator++()
+			{
+				auto it = m_aClasses.find(std::pair(koHash, m_uParams));
+				if (it == m_aClasses.end())
+				{
+					while (it == m_aClasses.end() && m_uParams <= s_kuMaxConstructParams)
+					{
+						m_uIndex = 0;
+						it = m_aClasses.find(std::pair(koHash, ++m_uParams));
+					}
+				}
+
+				if (m_aClasses[std::pair(koHash, m_uParams)] == nullptr)
+				{
+					++m_uIndex;
+				}
+			}
+
+		private:
+			uint32_t m_uParams : 3;
+			uint32_t m_uIndex : 29;
+		};
+
 	private:
-		std::unordered_map<std::pair<std::string, size_t>, std::unique_ptr<CClassBase>, SPairHash> m_aClasses;
+		std::unordered_map<std::pair<NHash::CHash, size_t>, std::unique_ptr<CClassBase>, SPairHash> m_aClasses;
 	};
 }

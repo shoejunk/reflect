@@ -1,4 +1,4 @@
-# Log
+# Reflect
 
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(
 	Reflect
-	VERSION 2.0.0
+	VERSION 3.0.0
 	LANGUAGES CXX)
 
 # ---- Fetch CPM ----
@@ -37,30 +37,35 @@ target_include_directories(nlohmann_json INTERFACE "${nlohmann_json_SOURCE_DIR}/
 CPMAddPackage(
 	NAME log
 	GITHUB_REPOSITORY shoejunk/log
-	VERSION 0.3.0
+	VERSION 0.5.0
+)
+
+# Add package: shoejunk/hash
+CPMAddPackage(
+	NAME hash
+	GITHUB_REPOSITORY shoejunk/hash
+	VERSION 2.0.0
 )
 
 # ---- Add source files ----
-
-file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cppm")
 
 # ---- Create library ----
 
 # Note: for header-only libraries change all PUBLIC flags to INTERFACE and create an interface
-# target: add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME} ${headers} ${sources})
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
-target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
+target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive-;/experimental:module>")
+
+target_link_libraries(${PROJECT_NAME} Hash::Hash Log::Log)
 
 target_include_directories(
 	${PROJECT_NAME} PUBLIC
 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 	${PROJECT_NAME} PRIVATE ${nlohmann_json_SOURCE_DIR}/include
-	${PROJECT_NAME} PRIVATE ${log_SOURCE_DIR}/include
 )
 
 # the location where the project's version header will be placed should match the project's regular

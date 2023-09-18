@@ -1,12 +1,11 @@
-// STK
-#include <log/log.h>
-#include <reflect/reflect.h>
+import stk.log;
+import stk.reflect;
 
 // 3rd Party
-#include <nlohmann/json.hpp>
+import <nlohmann/json.hpp>;
 
 // System
-#include <fstream>
+import std.core;
 
 using namespace NStk::NReflect;
 using namespace NStk::NLog;
