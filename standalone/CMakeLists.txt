@@ -25,6 +25,13 @@ CPMAddPackage(
 	VERSION 0.3.0
 )
 
+# Add package: shoejunk/hash
+CPMAddPackage(
+	NAME hash
+	GITHUB_REPOSITORY shoejunk/hash
+	VERSION 2.1.0
+)
+
 # Add package: nlohmann/json
 CPMAddPackage(
 	NAME nlohmann_json

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(
 	Reflect
-	VERSION 3.0.0
+	VERSION 3.1.0
 	LANGUAGES CXX)
 
 # ---- Fetch CPM ----
@@ -44,7 +44,7 @@ CPMAddPackage(
 CPMAddPackage(
 	NAME hash
 	GITHUB_REPOSITORY shoejunk/hash
-	VERSION 2.0.0
+	VERSION 2.1.1
 )
 
 # ---- Add source files ----

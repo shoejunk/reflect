@@ -1,23 +1,28 @@
 import stk.log;
 import stk.reflect;
-
-// 3rd Party
-import <nlohmann/json.hpp>;
-
-// System
+import stk.hash;
 import std.core;
+import <nlohmann/json.hpp>;
 
 using namespace NStk::NReflect;
 using namespace NStk::NLog;
+using namespace NStk::NHash;
+using namespace std;
+using namespace nlohmann;
 
 class CTest
 {
 public:
-	CTest() { Log("Hello World!\n"); }
+	CTest() : m_iTest(0) { Log("Hello World!\n"); }
 	CTest(int32_t i)
+		: m_iTest(i)
 	{
 		Log("Hello %d Worlds!\n", i);
 	}
+	void Test() { Log("Test %d!\n", m_iTest); }
+
+private:
+	int32_t m_iTest;
 };
 
 int main()
@@ -29,7 +34,7 @@ int main()
 	oReflect.Register<CTest, 1>("Test");
 
 	// Open the level file
-	std::ifstream oFile("data/level.json");
+	ifstream oFile("data/level.json");
 	if (!oFile.is_open())
 	{
 		Log("Error: Could not open level.json!\n");
@@ -37,13 +42,13 @@ int main()
 	}
 
 	// Read it into a json object
-	nlohmann::json oJson;
+	json oJson;
 
 	try
 	{
 		oFile >> oJson;
 	}
-	catch (nlohmann::json::parse_error& oError)
+	catch (json::parse_error& oError)
 	{
 		Log("Error: Could not parse level.json: %s\n", oError.what());
 		return 1;
@@ -52,9 +57,16 @@ int main()
 	// Construct an object from each object in the json array
 	for (auto& oObject : oJson)
 	{
-		std::string sType = oObject["type"];
+		string sType = oObject["type"];
 		oReflect.Construct(sType);
 		oReflect.Construct(sType, oObject["data"]);
 	}
+
+	auto oEnd = oReflect.end<CTest, "Test"_h>();
+	for (auto it = oReflect.begin<CTest, "Test"_h>(); it != oEnd; ++it)
+	{
+		it->Test();
+	}
+
 	return 0;
 }

@@ -9,6 +9,8 @@ import std.core;
 // Namespaces
 using namespace NStk::NHash;
 using namespace NStk::NLog;
+using namespace std;
+using namespace nlohmann;
 
 // NReflect
 namespace NStk::NReflect
@@ -18,26 +20,58 @@ namespace NStk::NReflect
 	{
 	public:
 		virtual void Construct() = 0;
-		virtual void Construct(nlohmann::json const& kaData) = 0;
-		virtual std::string const& GetClassName() const = 0;
+		virtual void Construct(json const& kaData) = 0;
+		virtual string const& GetClassName() const = 0;
+	};
+
+	template<class T>
+	class TClassBase : public CClassBase
+	{
+	public:
+		TClassBase<T>(string sClassName) : m_ksClassName(sClassName) {}
+		virtual string const& GetClassName() const override
+		{
+			return m_ksClassName;
+		}
+
+		size_t Size() const
+		{
+			return m_aObjects.size();
+		}
+
+		T& operator[](size_t uIndex)
+		{
+			return *m_aObjects[uIndex];
+		}
+
+		T const& operator[](size_t uIndex) const
+		{
+			return *m_aObjects[uIndex];
+		}
+
+	protected:
+		vector<unique_ptr<T>> m_aObjects;
+
+	private:
+		string const m_ksClassName;
 	};
 
 	// Template class for the "Class" class
 	template<class T, size_t kuConstructParams>
-	class TClass : public CClassBase
+	class TClass : public TClassBase<T>
 	{
 	public:
-		TClass<T, kuConstructParams>(std::string sClassName) : m_ksClassName(sClassName) {}
+		TClass<T, kuConstructParams>(string sClassName) : TClassBase<T>(sClassName) {}
 
 		virtual void Construct() override
 		{
-			m_aObjects.push_back(std::make_unique<T>());
+			this->m_aObjects.push_back(make_unique<T>());
 		}
 
 		// Construct with a vector of data. By default, this just calls the default constructor.
 		// In order to use the data, you must override this function in a template specialization
 		// of TClass.
-		virtual void Construct(nlohmann::json const& kaData) override
+		virtual void Construct(json const& kaData) override
 		{
 			if (!kaData.is_array())
 			{
@@ -47,71 +81,147 @@ namespace NStk::NReflect
 
 			if (kaData.size() < kuConstructParams)
 			{
-				NLog::Log("Error: Not enough paramaters to construct %s!\n", m_ksClassName.c_str());
+				NLog::Log("Error: Not enough parameters to construct %s!\n", this->GetClassName().c_str());
 				return;
 			}
 
 			if (kaData.size() > kuConstructParams)
 			{
-				NLog::Log("Error: Too many paramaters to construct %s!\n", m_ksClassName.c_str());
+				NLog::Log("Error: Too many parameters to construct %s!\n", this->GetClassName().c_str());
 				return;
 			}
 
 			if constexpr (kuConstructParams == 0)
 			{
-				m_aObjects.push_back(std::make_unique<T>());
+				this->m_aObjects.push_back(make_unique<T>());
 			}
 			else if constexpr (kuConstructParams == 1)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0]));
 			}
 			else if constexpr (kuConstructParams == 2)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1]));
 			}
 			else if constexpr (kuConstructParams == 3)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2]));
 			}
 			else if constexpr (kuConstructParams == 4)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3]));
 			}
 			else if constexpr (kuConstructParams == 5)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4]));
 			}
 			else if constexpr (kuConstructParams == 6)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5]));
 			}
 			else if constexpr (kuConstructParams == 7)
 			{
-				m_aObjects.push_back(std::make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5], kaData[6]));
+				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5], kaData[6]));
 			}
 		}
+	};
 
-		virtual std::string const& GetClassName() const override
+	struct SHashSizeHash
+	{
+		std::size_t operator()(const std::pair<CHash, size_t>& p) const
 		{
-			return m_ksClassName;
+			return p.first.m_uHash + p.second;
+		}
+	};
+
+	class CReflect;
+
+	template<class T, CHash koHash>
+	class TIter
+	{
+	public:
+		using iterator_category = forward_iterator_tag;
+		using value_type = CClassBase;
+		using pointer = T*;
+		using reference = T&;
+
+		TIter<T, koHash>(CReflect& oReflect) : m_oReflect(oReflect), m_uParams(0), m_uIndex(0) {}
+		TIter<T, koHash>(CReflect& oReflect, uint32_t uParams, uint32_t uIndex) : m_oReflect(oReflect), m_uParams(uParams), m_uIndex(uIndex) {}
+
+		TIter<T, koHash>& operator++()
+		{
+			// 1. Increase the index
+			// 2. Look for a class with the same hash and number of parameters. If it doesn't exist, stop.
+			// 3. If it does exist, check if the index is valid. If it is, stop.
+			// 4. If it isn't, increase the number of parameters, reset the index to 0, and go to step 2.
+			++m_uIndex;
+
+			while (m_uParams <= 7)
+			{
+				auto it = m_oReflect.m_aClasses.find(pair(koHash, m_uParams));
+				if (it == m_oReflect.m_aClasses.end())
+				{
+					m_uParams = 7;
+					m_uIndex = 0x1fffffff;
+					return *this;
+				}
+
+				std::unique_ptr<CClassBase>& pClass = it->second;
+				TClassBase<T>* pkClass = static_cast<TClassBase<T>*>(pClass.get());
+				if (pkClass->Size() > m_uIndex)
+				{
+					return *this;
+				}
+
+				++m_uParams;
+				m_uIndex = 0;
+			}
+
+			m_uIndex = 0x1fffffff;
+			return *this;
+		}
+
+		TIter<T, koHash> operator++(int)
+		{
+			TIter<T, koHash> koTemp = *this;
+			++(*this);
+			return koTemp;
+		}
+
+		bool operator==(TIter<T, koHash> const& koRhs) const
+		{
+			return m_uParams == koRhs.m_uParams && m_uIndex == koRhs.m_uIndex;
+		}
+
+		bool operator!=(TIter<T, koHash> const& koRhs) const
+		{
+			return m_uParams != koRhs.m_uParams || m_uIndex != koRhs.m_uIndex;
+		}
+
+		reference operator*() const
+		{
+			auto it = m_oReflect.m_aClasses.find(pair(koHash, m_uParams));
+			assert(it != m_oReflect.m_aClasses.end());
+			std::unique_ptr<CClassBase> const& koClass = it->second;
+			TClassBase<T>* pkClass = static_cast<TClassBase<T>*>(koClass.get());
+			assert(pkClass);
+			return (*pkClass)[m_uIndex];
+		}
+
+		pointer operator->()
+		{
+			auto it = m_oReflect.m_aClasses.find(pair(koHash, m_uParams));
+			assert(it != m_oReflect.m_aClasses.end());
+			std::unique_ptr<CClassBase>& oClass = it->second;
+			TClassBase<T>* pClass = static_cast<TClassBase<T>*>(oClass.get());
+			assert(pClass);
+			return &(*pClass)[m_uIndex];
 		}
 
 	private:
-		std::string const m_ksClassName;
-		std::vector<std::unique_ptr<T>> m_aObjects;
-	};
-
-	struct SPairHash
-	{
-		template <typename T1, typename T2>
-		std::size_t operator () (const std::pair<T1, T2>& p) const
-		{
-			auto hash1 = std::hash<uint32_t>{}(p.first);
-			auto hash2 = std::hash<T2>{}(p.second);
-
-			// Combine the hashes
-			return hash1 ^ hash2;
-		}
+		CReflect& m_oReflect;
+		uint32_t m_uParams : 3;
+		uint32_t m_uIndex : 29;
 	};
 
 	// Class that holds a map of class names to class objects
@@ -122,14 +232,14 @@ namespace NStk::NReflect
 
 	public:
 		template<typename T, size_t kuConstructParams>
-		void Register(std::string sClassName)
+		void Register(string sClassName)
 		{
-			m_aClasses[std::pair(sClassName, kuConstructParams)] = std::make_unique<TClass<T, kuConstructParams>>(sClassName);
+			m_aClasses[pair(sClassName, kuConstructParams)] = make_unique<TClass<T, kuConstructParams>>(sClassName);
 		}
 
-		void Construct(std::string const& ksClassName)
+		void Construct(string const& ksClassName)
 		{
-			auto oIt = m_aClasses.find(std::pair(ksClassName, 0));
+			auto oIt = m_aClasses.find(pair(ksClassName, 0));
 			if (oIt == m_aClasses.end())
 			{
 				Log("Error: Could not find class %s with a 0 parameter constructor!\n", ksClassName.c_str());
@@ -138,51 +248,34 @@ namespace NStk::NReflect
 			oIt->second->Construct();
 		}
 
-		void Construct(std::string const& ksClassName, nlohmann::json const& kaData)
+		void Construct(string const& ksClassName, json const& kaData)
 		{
 			if (!kaData.is_array())
 			{
 				Log("Error: json object passed to Construct must be an array.\n");
 				return;
 			}
-			m_aClasses[std::pair(NHash::CHash{ ksClassName }, kaData.size())]->Construct(kaData);
+			m_aClasses[pair(CHash{ ksClassName }, kaData.size())]->Construct(kaData);
 		}
 
-		template<uint32_t koHash>
-		class CIter
+		template<class T, CHash koHash>
+		TIter<T, koHash> begin()
 		{
-		public:
-			using iterator_category = std::forward_iterator_tag;
-			using value_type = CClassBase;
-			using pointer = CClassBase*;
-			using reference = CClassBase&;
+			return TIter<T, koHash>(*this);
+		}
 
-			CIter() : m_uParams(0), m_uIndex(0) {}
+		template<class T, CHash koHash>
+		TIter<T, koHash> end()
+		{
+			return TIter<T, koHash>(*this, 7, 0x1fffffff);
+		}
 
-			CIter& operator++()
-			{
-				auto it = m_aClasses.find(std::pair(koHash, m_uParams));
-				if (it == m_aClasses.end())
-				{
-					while (it == m_aClasses.end() && m_uParams <= s_kuMaxConstructParams)
-					{
-						m_uIndex = 0;
-						it = m_aClasses.find(std::pair(koHash, ++m_uParams));
-					}
-				}
-
-				if (m_aClasses[std::pair(koHash, m_uParams)] == nullptr)
-				{
-					++m_uIndex;
-				}
-			}
-
-		private:
-			uint32_t m_uParams : 3;
-			uint32_t m_uIndex : 29;
-		};
+		template<class T, CHash koHash>
+		friend class TIter;
 
 	private:
-		std::unordered_map<std::pair<NHash::CHash, size_t>, std::unique_ptr<CClassBase>, SPairHash> m_aClasses;
+		std::unordered_map<pair<CHash, size_t>, unique_ptr<CClassBase>, SHashSizeHash> m_aClasses;
+
+		
 	};
 }
