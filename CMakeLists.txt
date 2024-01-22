@@ -1,11 +1,11 @@
-# Reflect
+# reflect
 
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 # ---- Project ----
 
 project(
-	Reflect
+	reflect
 	VERSION 3.1.0
 	LANGUAGES CXX)
 
@@ -37,14 +37,16 @@ target_include_directories(nlohmann_json INTERFACE "${nlohmann_json_SOURCE_DIR}/
 CPMAddPackage(
 	NAME log
 	GITHUB_REPOSITORY shoejunk/log
-	VERSION 0.5.0
+	#VERSION 0.5.0
+	GIT_TAG main
 )
 
 # Add package: shoejunk/hash
 CPMAddPackage(
 	NAME hash
 	GITHUB_REPOSITORY shoejunk/hash
-	VERSION 2.1.1
+	#VERSION 2.1.1
+	GIT_TAG main
 )
 
 # ---- Add source files ----
@@ -59,7 +61,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23)
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive-;/experimental:module>")
 
-target_link_libraries(${PROJECT_NAME} Hash::Hash Log::Log)
+target_link_libraries(${PROJECT_NAME} hash log)
 
 target_include_directories(
 	${PROJECT_NAME} PUBLIC

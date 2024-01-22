@@ -4,12 +4,14 @@ import stk.hash;
 import stk.log;
 
 import <nlohmann/json.hpp>;
+#pragma warning(push)
+#pragma warning(disable: 5050) // _M_FP_PRECISE is defined in current command line and not in module command line
 import std.core;
+#pragma warning(pop)
 
 // Namespaces
-using namespace NStk::NHash;
-using namespace NStk::NLog;
 using namespace std;
+using namespace stk;
 using namespace nlohmann;
 
 // NReflect
@@ -75,19 +77,19 @@ namespace NStk::NReflect
 		{
 			if (!kaData.is_array())
 			{
-				NLog::Log("Error: json object passed to Construct must be an array.\n");
+				errorln("Error: json object passed to Construct must be an array.");
 				return;
 			}
 
 			if (kaData.size() < kuConstructParams)
 			{
-				NLog::Log("Error: Not enough parameters to construct %s!\n", this->GetClassName().c_str());
+				errorln("Error: Not enough parameters to construct {}!", this->GetClassName().c_str());
 				return;
 			}
 
 			if (kaData.size() > kuConstructParams)
 			{
-				NLog::Log("Error: Too many parameters to construct %s!\n", this->GetClassName().c_str());
+				errorln("Error: Too many parameters to construct {}!", this->GetClassName().c_str());
 				return;
 			}
 
@@ -128,15 +130,15 @@ namespace NStk::NReflect
 
 	struct SHashSizeHash
 	{
-		std::size_t operator()(const std::pair<CHash, size_t>& p) const
+		std::size_t operator()(const std::pair<c_hash, size_t>& p) const
 		{
-			return p.first.m_uHash + p.second;
+			return p.first.m_hash + p.second;
 		}
 	};
 
 	class CReflect;
 
-	template<class T, CHash koHash>
+	template<class T, c_hash koHash>
 	class TIter
 	{
 	public:
@@ -242,7 +244,7 @@ namespace NStk::NReflect
 			auto oIt = m_aClasses.find(pair(ksClassName, 0));
 			if (oIt == m_aClasses.end())
 			{
-				Log("Error: Could not find class %s with a 0 parameter constructor!\n", ksClassName.c_str());
+				errorln("Error: Could not find class {} with a 0 parameter constructor!", ksClassName.c_str());
 				return;
 			}
 			oIt->second->Construct();
@@ -252,7 +254,7 @@ namespace NStk::NReflect
 		{
 			if (!kaData.is_array())
 			{
-				Log("Error: json object passed to Construct must be an array.\n");
+				errorln("Error: json object passed to Construct must be an array.");
 				return;
 			}
 			m_aClasses[pair(CHash{ ksClassName }, kaData.size())]->Construct(kaData);
