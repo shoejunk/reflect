@@ -15,95 +15,95 @@ using namespace stk;
 using namespace nlohmann;
 
 // NReflect
-namespace NStk::NReflect
+namespace stk
 {
-	// Base class for the "Class" class
-	class CClassBase
+	// Base class for the class" class
+	class c_class_base
 	{
 	public:
-		virtual void Construct() = 0;
-		virtual void Construct(json const& kaData) = 0;
-		virtual string const& GetClassName() const = 0;
+		virtual void construct() = 0;
+		virtual void construct(json const& data) = 0;
+		virtual string const& class_name() const = 0;
 	};
 
 	template<class T>
-	class TClassBase : public CClassBase
+	class c_class_base_typed : public c_class_base
 	{
 	public:
-		TClassBase<T>(string sClassName) : m_ksClassName(sClassName) {}
-		virtual string const& GetClassName() const override
+		c_class_base_typed<T>(string class_name) : m_class_name(class_name) {}
+		virtual string const& class_name() const override
 		{
-			return m_ksClassName;
+			return m_class_name;
 		}
 
-		size_t Size() const
+		size_t size() const
 		{
-			return m_aObjects.size();
+			return m_objects.size();
 		}
 
-		T& operator[](size_t uIndex)
+		T& operator[](size_t index)
 		{
-			return *m_aObjects[uIndex];
+			return *m_objects[index];
 		}
 
-		T const& operator[](size_t uIndex) const
+		T const& operator[](size_t index) const
 		{
-			return *m_aObjects[uIndex];
+			return *m_objects[index];
 		}
 
 	protected:
-		vector<unique_ptr<T>> m_aObjects;
+		vector<unique_ptr<T>> m_objects;
 
 	private:
-		string const m_ksClassName;
+		string const m_class_name;
 	};
 
-	// Template class for the "Class" class
-	template<class T, size_t kuConstructParams>
-	class TClass : public TClassBase<T>
+	// Template class for the "class" class
+	template<class T, size_t construct_params>
+	class c_class : public c_class_base_typed<T>
 	{
 	public:
-		TClass<T, kuConstructParams>(string sClassName) : TClassBase<T>(sClassName) {}
+		c_class<T, construct_params>(string class_name) : c_class_base_typed<T>(class_name) {}
 
-		virtual void Construct() override
+		virtual void construct() override
 		{
-			this->m_aObjects.push_back(make_unique<T>());
+			this->m_objects.push_back(make_unique<T>());
 		}
 
 		// Construct with a vector of data. By default, this just calls the default constructor.
 		// In order to use the data, you must override this function in a template specialization
 		// of TClass.
-		virtual void Construct(json const& kaData) override
+		virtual void construct(json const& data) override
 		{
-			if (!kaData.is_array())
+			if (!data.is_array())
 			{
 				errorln("Error: json object passed to Construct must be an array.");
 				return;
 			}
 
-			if (kaData.size() < kuConstructParams)
+			if (data.size() < construct_params)
 			{
-				errorln("Error: Not enough parameters to construct {}!", this->GetClassName().c_str());
+				errorln("Error: Not enough parameters to construct {}!", this->class_name().c_str());
 				return;
 			}
 
-			if (kaData.size() > kuConstructParams)
+			if (data.size() > construct_params)
 			{
-				errorln("Error: Too many parameters to construct {}!", this->GetClassName().c_str());
+				errorln("Error: Too many parameters to construct {}!", this->class_name().c_str());
 				return;
 			}
 
-			if constexpr (kuConstructParams == 0)
+			if constexpr (construct_params == 0)
 			{
-				this->m_aObjects.push_back(make_unique<T>());
+				this->m_objects.push_back(make_unique<T>());
 			}
-			else if constexpr (kuConstructParams == 1)
+			else if constexpr (construct_params == 1)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0]));
+				this->m_objects.push_back(make_unique<T>(data[0]));
 			}
-			else if constexpr (kuConstructParams == 2)
+			else if constexpr (construct_params == 2)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1]));
+				this->m_objects.push_back(make_unique<T>(data[0], data[1]));
 			}
 			else if constexpr (kuConstructParams == 3)
 			{
@@ -128,7 +128,7 @@ namespace NStk::NReflect
 		}
 	};
 
-	struct SHashSizeHash
+	struct s_hash_size_hash
 	{
 		std::size_t operator()(const std::pair<c_hash, size_t>& p) const
 		{
@@ -136,94 +136,94 @@ namespace NStk::NReflect
 		}
 	};
 
-	class CReflect;
+	class c_reflect;
 
-	template<class T, c_hash koHash>
-	class TIter
+	template<class T, c_hash hash>
+	class c_iter
 	{
 	public:
 		using iterator_category = forward_iterator_tag;
-		using value_type = CClassBase;
+		using value_type = c_class_base;
 		using pointer = T*;
 		using reference = T&;
 
-		TIter<T, koHash>(CReflect& oReflect) : m_oReflect(oReflect), m_uParams(0), m_uIndex(0) {}
-		TIter<T, koHash>(CReflect& oReflect, uint32_t uParams, uint32_t uIndex) : m_oReflect(oReflect), m_uParams(uParams), m_uIndex(uIndex) {}
+		c_iter<T, hash>(c_reflect& reflect) : m_reflect(reflect), m_params(0), m_index(0) {}
+		c_iter<T, hash>(c_reflect& reflect, uint32_t params, uint32_t index) : m_reflect(reflect), m_params(params), m_index(index) {}
 
-		TIter<T, koHash>& operator++()
+		c_iter<T, hash>& operator++()
 		{
 			// 1. Increase the index
 			// 2. Look for a class with the same hash and number of parameters. If it doesn't exist, stop.
 			// 3. If it does exist, check if the index is valid. If it is, stop.
 			// 4. If it isn't, increase the number of parameters, reset the index to 0, and go to step 2.
-			++m_uIndex;
+			++m_index;
 
-			while (m_uParams <= 7)
+			while (m_params <= 7)
 			{
-				auto it = m_oReflect.m_aClasses.find(pair(koHash, m_uParams));
-				if (it == m_oReflect.m_aClasses.end())
+				auto it = m_reflect.m_classes.find(pair(hash, m_params));
+				if (it == m_reflect.m_classes.end())
 				{
-					m_uParams = 7;
-					m_uIndex = 0x1fffffff;
+					m_params = 7;
+					m_index = 0x1fffffff;
 					return *this;
 				}
 
-				std::unique_ptr<CClassBase>& pClass = it->second;
-				TClassBase<T>* pkClass = static_cast<TClassBase<T>*>(pClass.get());
-				if (pkClass->Size() > m_uIndex)
+				std::unique_ptr<c_class_base>& class_obj = it->second;
+				c_class_base_typed<T>* class_obj = static_cast<c_class_base_typed<T>*>(class_obj.get());
+				if (class_obj->size() > m_index)
 				{
 					return *this;
 				}
 
-				++m_uParams;
-				m_uIndex = 0;
+				++m_params;
+				m_index = 0;
 			}
 
-			m_uIndex = 0x1fffffff;
+			m_index = 0x1fffffff;
 			return *this;
 		}
 
-		TIter<T, koHash> operator++(int)
+		c_iter<T, hash> operator++(int)
 		{
-			TIter<T, koHash> koTemp = *this;
+			c_iter<T, hash> temp = *this;
 			++(*this);
-			return koTemp;
+			return temp;
 		}
 
-		bool operator==(TIter<T, koHash> const& koRhs) const
+		bool operator==(c_iter<T, hash> const& rhs) const
 		{
-			return m_uParams == koRhs.m_uParams && m_uIndex == koRhs.m_uIndex;
+			return m_params == rhs.m_params && m_index == rhs.m_index;
 		}
 
-		bool operator!=(TIter<T, koHash> const& koRhs) const
+		bool operator!=(c_iter<T, hash> const& rhs) const
 		{
-			return m_uParams != koRhs.m_uParams || m_uIndex != koRhs.m_uIndex;
+			return m_params != rhs.m_params || m_index != rhs.m_index;
 		}
 
 		reference operator*() const
 		{
-			auto it = m_oReflect.m_aClasses.find(pair(koHash, m_uParams));
-			assert(it != m_oReflect.m_aClasses.end());
-			std::unique_ptr<CClassBase> const& koClass = it->second;
-			TClassBase<T>* pkClass = static_cast<TClassBase<T>*>(koClass.get());
-			assert(pkClass);
-			return (*pkClass)[m_uIndex];
+			auto it = m_reflect.m_classes.find(pair(hash, m_params));
+			assert(it != m_reflect.m_classes.end());
+			std::unique_ptr<c_class_base> const& class_obj = it->second;
+			c_class_base_typed<T>* class_obj = static_cast<c_class_base_typed<T>*>(class_obj.get());
+			assert(class_obj);
+			return (*class_obj)[m_index];
 		}
 
 		pointer operator->()
 		{
-			auto it = m_oReflect.m_aClasses.find(pair(koHash, m_uParams));
-			assert(it != m_oReflect.m_aClasses.end());
-			std::unique_ptr<CClassBase>& oClass = it->second;
-			TClassBase<T>* pClass = static_cast<TClassBase<T>*>(oClass.get());
-			assert(pClass);
-			return &(*pClass)[m_uIndex];
+			auto it = m_reflect.m_classes.find(pair(hash, m_params));
+			assert(it != m_reflect.m_classes.end());
+			std::unique_ptr<c_class_base_typed>& class_obj = it->second;
+			c_class_base_typed<T>* class_obj = static_cast<c_class_base_typed<T>*>(class_obj.get());
+			assert(class_obj);
+			return &(*class_obj)[m_index];
 		}
 
 	private:
-		CReflect& m_oReflect;
-		uint32_t m_uParams : 3;
-		uint32_t m_uIndex : 29;
+		c_reflect& m_reflect;
+		uint32_t m_params : 3;
+		uint32_t m_index : 29;
 	};
 
 	// Class that holds a map of class names to class objects
@@ -260,23 +260,23 @@ namespace NStk::NReflect
 			m_aClasses[pair(CHash{ ksClassName }, kaData.size())]->Construct(kaData);
 		}
 
-		template<class T, CHash koHash>
-		TIter<T, koHash> begin()
+		template<class T, c_hash hash>
+		c_iter<T, hash> begin()
 		{
-			return TIter<T, koHash>(*this);
+			return c_iter<T, hash>(*this);
 		}
 
-		template<class T, CHash koHash>
-		TIter<T, koHash> end()
+		template<class T, c_hash hash>
+		c_iter<T, hash> end()
 		{
-			return TIter<T, koHash>(*this, 7, 0x1fffffff);
+			return c_iter<T, hash>(*this, 7, 0x1fffffff);
 		}
 
-		template<class T, CHash koHash>
-		friend class TIter;
+		template<class T, c_hash hash>
+		friend class c_iter;
 
 	private:
-		std::unordered_map<pair<CHash, size_t>, unique_ptr<CClassBase>, SHashSizeHash> m_aClasses;
+		std::unordered_map<pair<c_hash, size_t>, unique_ptr<c_class_base>, s_hash_size_hash> m_aClasses;
 
 		
 	};

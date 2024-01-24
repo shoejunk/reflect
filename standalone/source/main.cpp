@@ -13,13 +13,13 @@ using namespace nlohmann;
 class CTest
 {
 public:
-	CTest() : m_iTest(0) { Log("Hello World!\n"); }
+	CTest() : m_iTest(0) { debugln("Hello World!\n"); }
 	CTest(int32_t i)
 		: m_iTest(i)
 	{
-		Log("Hello %d Worlds!\n", i);
+		debugln("Hello {} Worlds!", i);
 	}
-	void Test() { Log("Test %d!\n", m_iTest); }
+	void Test() { debugln("Test {}!", m_iTest); }
 
 private:
 	int32_t m_iTest;
@@ -37,7 +37,7 @@ int main()
 	ifstream oFile("data/level.json");
 	if (!oFile.is_open())
 	{
-		Log("Error: Could not open level.json!\n");
+		debugln("Error: Could not open level.json!");
 		return 1;
 	}
 
@@ -50,7 +50,7 @@ int main()
 	}
 	catch (json::parse_error& oError)
 	{
-		Log("Error: Could not parse level.json: %s\n", oError.what());
+		debugln("Error: Could not parse level.json: {}", oError.what());
 		return 1;
 	}
 
