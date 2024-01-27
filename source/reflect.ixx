@@ -105,25 +105,25 @@ namespace stk
 			{
 				this->m_objects.push_back(make_unique<T>(data[0], data[1]));
 			}
-			else if constexpr (kuConstructParams == 3)
+			else if constexpr (construct_params == 3)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2]));
+				this->m_objects.push_back(make_unique<T>(data[0], data[1], data[2]));
 			}
-			else if constexpr (kuConstructParams == 4)
+			else if constexpr (construct_params == 4)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3]));
+				this->m_objects.push_back(make_unique<T>(data[0], data[1], data[2], data[3]));
 			}
-			else if constexpr (kuConstructParams == 5)
+			else if constexpr (construct_params == 5)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4]));
+				this->m_objects.push_back(make_unique<T>(data[0], data[1], data[2], data[3], data[4]));
 			}
-			else if constexpr (kuConstructParams == 6)
+			else if constexpr (construct_params == 6)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5]));
+				this->m_objects.push_back(make_unique<T>(data[0], data[1], data[2], data[3], data[4], data[5]));
 			}
-			else if constexpr (kuConstructParams == 7)
+			else if constexpr (construct_params == 7)
 			{
-				this->m_aObjects.push_back(make_unique<T>(kaData[0], kaData[1], kaData[2], kaData[3], kaData[4], kaData[5], kaData[6]));
+				this->m_objects.push_back(make_unique<T>(data[0], data[1], data[2], data[3], data[4], data[5], data[6]));
 			}
 		}
 	};
@@ -227,37 +227,37 @@ namespace stk
 	};
 
 	// Class that holds a map of class names to class objects
-	export class CReflect
+	export class c_reflect
 	{
 	private:
 		static constexpr size_t s_kuMaxConstructParams = 7;
 
 	public:
-		template<typename T, size_t kuConstructParams>
-		void Register(string sClassName)
+		template<typename T, size_t construct_params>
+		void register_class(string class_name)
 		{
-			m_aClasses[pair(sClassName, kuConstructParams)] = make_unique<TClass<T, kuConstructParams>>(sClassName);
+			m_aClasses[pair(class_name, construct_params)] = make_unique<c_class<T, construct_params>>(class_name);
 		}
 
-		void Construct(string const& ksClassName)
+		void construct(string const& class_name)
 		{
-			auto oIt = m_aClasses.find(pair(ksClassName, 0));
+			auto oIt = m_aClasses.find(pair(class_name, 0));
 			if (oIt == m_aClasses.end())
 			{
-				errorln("Error: Could not find class {} with a 0 parameter constructor!", ksClassName.c_str());
+				errorln("Error: Could not find class {} with a 0 parameter constructor!", class_name.c_str());
 				return;
 			}
-			oIt->second->Construct();
+			oIt->second->construct();
 		}
 
-		void Construct(string const& ksClassName, json const& kaData)
+		void construct(string const& class_name, json const& data)
 		{
-			if (!kaData.is_array())
+			if (!data.is_array())
 			{
 				errorln("Error: json object passed to Construct must be an array.");
 				return;
 			}
-			m_aClasses[pair(CHash{ ksClassName }, kaData.size())]->Construct(kaData);
+			m_aClasses[pair(c_hash{ class_name }, data.size())]->construct(data);
 		}
 
 		template<class T, c_hash hash>
@@ -277,7 +277,5 @@ namespace stk
 
 	private:
 		std::unordered_map<pair<c_hash, size_t>, unique_ptr<c_class_base>, s_hash_size_hash> m_aClasses;
-
-		
 	};
 }
