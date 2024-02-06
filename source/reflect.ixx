@@ -169,8 +169,8 @@ namespace stk
 				}
 
 				std::unique_ptr<c_class_base>& class_obj = it->second;
-				c_class_base_typed<T>* class_obj = static_cast<c_class_base_typed<T>*>(class_obj.get());
-				if (class_obj->size() > m_index)
+				c_class_base_typed<T>* class_ptr = static_cast<c_class_base_typed<T>*>(class_obj.get());
+				if (class_ptr->size() > m_index)
 				{
 					return *this;
 				}
@@ -214,10 +214,10 @@ namespace stk
 		{
 			auto it = m_reflect.m_classes.find(pair(hash, m_params));
 			assert(it != m_reflect.m_classes.end());
-			std::unique_ptr<c_class_base_typed>& class_obj = it->second;
-			c_class_base_typed<T>* class_obj = static_cast<c_class_base_typed<T>*>(class_obj.get());
-			assert(class_obj);
-			return &(*class_obj)[m_index];
+			std::unique_ptr<c_class_base>& class_obj = it->second;
+			c_class_base_typed<T>* class_ptr = static_cast<c_class_base_typed<T>*>(class_obj.get());
+			assert(class_ptr);
+			return &(*class_ptr)[m_index];
 		}
 
 	private:
@@ -236,13 +236,13 @@ namespace stk
 		template<typename T, size_t construct_params>
 		void register_class(string class_name)
 		{
-			m_aClasses[pair(class_name, construct_params)] = make_unique<c_class<T, construct_params>>(class_name);
+			m_classes[pair(class_name, construct_params)] = make_unique<c_class<T, construct_params>>(class_name);
 		}
 
 		void construct(string const& class_name)
 		{
-			auto oIt = m_aClasses.find(pair(class_name, 0));
-			if (oIt == m_aClasses.end())
+			auto oIt = m_classes.find(pair(class_name, 0));
+			if (oIt == m_classes.end())
 			{
 				errorln("Error: Could not find class {} with a 0 parameter constructor!", class_name.c_str());
 				return;
@@ -257,7 +257,7 @@ namespace stk
 				errorln("Error: json object passed to Construct must be an array.");
 				return;
 			}
-			m_aClasses[pair(c_hash{ class_name }, data.size())]->construct(data);
+			m_classes[pair(c_hash{ class_name }, data.size())]->construct(data);
 		}
 
 		template<class T, c_hash hash>
@@ -276,6 +276,6 @@ namespace stk
 		friend class c_iter;
 
 	private:
-		std::unordered_map<pair<c_hash, size_t>, unique_ptr<c_class_base>, s_hash_size_hash> m_aClasses;
+		std::unordered_map<pair<c_hash, size_t>, unique_ptr<c_class_base>, s_hash_size_hash> m_classes;
 	};
 }

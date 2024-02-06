@@ -1,71 +1,72 @@
 import stk.log;
 import stk.reflect;
 import stk.hash;
+#pragma warning(push)
+#pragma warning(disable: 5050) // _M_FP_PRECISE is defined in current command line and not in module command line
 import std.core;
+#pragma warning(pop)
 import <nlohmann/json.hpp>;
 
-using namespace NStk::NReflect;
-using namespace NStk::NLog;
-using namespace NStk::NHash;
+using namespace stk;
 using namespace std;
 using namespace nlohmann;
 
-class CTest
+class c_test
 {
 public:
-	CTest() : m_iTest(0) { debugln("Hello World!\n"); }
-	CTest(int32_t i)
-		: m_iTest(i)
+	c_test() : m_test(0) { debugln("Hello World!"); }
+	c_test(int32_t i)
+		: m_test(i)
 	{
 		debugln("Hello {} Worlds!", i);
 	}
-	void Test() { debugln("Test {}!", m_iTest); }
+	void test() { debugln("Test {}!", m_test); }
 
 private:
-	int32_t m_iTest;
+	int32_t m_test;
 };
 
 int main()
 {
-	CReflect oReflect;
+	c_reflect reflect;
 
 	// Register the CTest class with 0 and 1 parameters
-	oReflect.Register<CTest, 0>("Test");
-	oReflect.Register<CTest, 1>("Test");
+	reflect.register_class<c_test, 0>("Test");
+	reflect.register_class<c_test, 1>("Test");
 
 	// Open the level file
-	ifstream oFile("data/level.json");
-	if (!oFile.is_open())
+	ifstream file("data/level.json");
+	if (!file.is_open())
 	{
 		debugln("Error: Could not open level.json!");
 		return 1;
 	}
 
 	// Read it into a json object
-	json oJson;
+	json json;
 
 	try
 	{
-		oFile >> oJson;
+		file >> json;
 	}
-	catch (json::parse_error& oError)
+	catch (json::parse_error& error)
 	{
-		debugln("Error: Could not parse level.json: {}", oError.what());
+		debugln("Error: Could not parse level.json: {}", error.what());
 		return 1;
 	}
 
 	// Construct an object from each object in the json array
-	for (auto& oObject : oJson)
+	for (auto& object : json)
 	{
-		string sType = oObject["type"];
-		oReflect.Construct(sType);
-		oReflect.Construct(sType, oObject["data"]);
+		string type = object["type"];
+		reflect.construct(type);
+		reflect.construct(type, object["data"]);
 	}
 
-	auto oEnd = oReflect.end<CTest, "Test"_h>();
-	for (auto it = oReflect.begin<CTest, "Test"_h>(); it != oEnd; ++it)
+	auto end = reflect.end<c_test, "Test"_h>();
+	for (auto it = reflect.begin<c_test, "Test"_h>(); it != end; ++it)
 	{
-		it->Test();
+		it->test();
 	}
 
 	return 0;
