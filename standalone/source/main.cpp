@@ -1,3 +1,4 @@
+import lunar_rescue.game;
 import stk.log;
 import stk.reflect;
 import stk.hash;

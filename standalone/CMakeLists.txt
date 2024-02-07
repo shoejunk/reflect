@@ -34,6 +34,14 @@ CPMAddPackage(
 	GIT_TAG main
 )
 
+# Add package: shoejunk/game
+CPMAddPackage(
+	NAME lunar_resuce_game
+	GITHUB_REPOSITORY shoejunk/lunar_rescue_game
+	#VERSION X.X.X
+	GIT_TAG main
+)
+
 # Add package: nlohmann/json
 CPMAddPackage(
 	NAME nlohmann_json
@@ -50,6 +58,6 @@ add_executable(${PROJECT_NAME} ${sources})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23 OUTPUT_NAME "reflect")
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_SOURCE_DIR}/include)
-target_link_libraries(${PROJECT_NAME} reflect log cxxopts)
+target_link_libraries(${PROJECT_NAME} reflect log lunar_rescue_game cxxopts)
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
