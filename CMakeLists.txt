@@ -64,8 +64,6 @@ target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>
 target_link_libraries(${PROJECT_NAME} hash log)
 
 target_include_directories(
-	${PROJECT_NAME} PUBLIC
-	$<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 	${PROJECT_NAME} PRIVATE ${nlohmann_json_SOURCE_DIR}/include
 )
 
