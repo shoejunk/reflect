@@ -65,7 +65,6 @@ target_link_libraries(${PROJECT_NAME} hash log)
 
 target_include_directories(
 	${PROJECT_NAME} PUBLIC
-	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 	${PROJECT_NAME} PRIVATE ${nlohmann_json_SOURCE_DIR}/include
 )
