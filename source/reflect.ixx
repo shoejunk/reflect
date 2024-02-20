@@ -21,6 +21,7 @@ namespace stk
 	class c_class_base
 	{
 	public:
+		virtual ~c_class_base() = default;
 		virtual void construct() = 0;
 		virtual void construct(json const& data) = 0;
 		virtual string const& class_name() const = 0;
