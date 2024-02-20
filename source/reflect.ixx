@@ -30,6 +30,11 @@ namespace stk
 	class c_class_base_typed : public c_class_base
 	{
 	public:
+		virtual ~c_class_base_typed()
+		{
+			m_objects.clear();
+		}
+
 		c_class_base_typed<T>(string class_name) : m_class_name(class_name) {}
 		virtual string const& class_name() const override
 		{
@@ -233,6 +238,11 @@ namespace stk
 		static constexpr size_t s_kuMaxConstructParams = 7;
 
 	public:
+		~c_reflect()
+		{
+			m_classes.clear();
+		}
+
 		template<typename T, size_t construct_params>
 		void register_class(string class_name)
 		{
